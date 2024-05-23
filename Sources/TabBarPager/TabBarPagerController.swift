@@ -168,7 +168,7 @@ extension TabBarPagerController {
         guard let dataSource = self.dataSource,
               let delegate = self.delegate
         else {
-            assertionFailure()
+            assert(view.window == nil, "The data source & delegate should not be nil for the on screen controller")
             return
         }
         
