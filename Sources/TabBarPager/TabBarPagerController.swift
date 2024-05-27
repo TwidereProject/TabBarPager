@@ -41,7 +41,8 @@ public class TabBarPagerController: UIViewController {
     
     private var contentOffsets: [Int: CGFloat] = [:]
     private var contentSizeObservations: [Int: NSKeyValueObservation] = [:]
-    
+    private var headerSizeObservations: [Int: NSKeyValueObservation] = [:]
+
     public weak var delegate: TabBarPagerDelegate?
     public weak var dataSource: TabBarPagerDataSource? {
         didSet { layout() }
@@ -103,6 +104,7 @@ extension TabBarPagerController {
         // add pageboyViewController
         addChild(pageViewController)
         pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        pageViewController.view.frame = view.bounds
         containerScrollView.addSubview(pageViewController.view)
         pageViewController.didMove(toParent: self)
         NSLayoutConstraint.activate([
@@ -115,6 +117,7 @@ extension TabBarPagerController {
         // add headerViewController
         addChild(headerViewController)
         headerViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        headerViewController.view.frame = view.bounds
         containerScrollView.addSubview(headerViewController.view)
         headerViewController.didMove(toParent: self)
         NSLayoutConstraint.activate([
@@ -135,12 +138,19 @@ extension TabBarPagerController {
     private func updatePageObservation() {
         guard let dataSource = self.dataSource else { return }
         let pageViewController = dataSource.pageViewController()
-        
+        let headerViewController = dataSource.headerViewController()
+
         // Note:
         // The `index` was updated when call from `TabBarPageViewDelegate`
         guard let index = pageViewController.currentPageIndex else { return }
         guard let page = pageViewController.currentPage else { return }
-        
+
+        // observe header height change
+        headerSizeObservations[index] = headerViewController.view.observe(\.bounds, options: [.initial, .new]) { [weak self] _, _ in
+            guard let self = self else { return }
+            self.updateRelayScrollViewContentSize(scrollView: page.pageScrollView, at: index)
+        }
+
         // observe content size change
         observePageContentSize(scrollView: page.pageScrollView, at: index)
         
@@ -154,10 +164,10 @@ extension TabBarPagerController {
     private func observePageContentSize(scrollView: UIScrollView, at pageIndex: Int) {
         // update content size
         updateRelayScrollViewContentSize(scrollView: scrollView, at: pageIndex)
-        
+
         // set KVO if needs
         if contentSizeObservations[pageIndex] == nil {
-            contentSizeObservations[pageIndex] = scrollView.observe(\.contentSize, options: [.new]) { [weak self] scrollView, _ in
+            contentSizeObservations[pageIndex] = scrollView.observe(\.contentSize, options: [.initial, .new]) { [weak self] scrollView, _ in
                 guard let self = self else { return }
                 self.updateRelayScrollViewContentSize(scrollView: scrollView, at: pageIndex)
             }
