@@ -165,12 +165,10 @@ extension TabBarPagerController {
         // update content size
         updateRelayScrollViewContentSize(scrollView: scrollView, at: pageIndex)
 
-        // set KVO if needs
-        if contentSizeObservations[pageIndex] == nil {
-            contentSizeObservations[pageIndex] = scrollView.observe(\.contentSize, options: [.initial, .new]) { [weak self] scrollView, _ in
-                guard let self = self else { return }
-                self.updateRelayScrollViewContentSize(scrollView: scrollView, at: pageIndex)
-            }
+        // set KVO
+        contentSizeObservations[pageIndex] = scrollView.observe(\.contentSize, options: [.new]) { [weak self] scrollView, _ in
+            guard let self = self else { return }
+            self.updateRelayScrollViewContentSize(scrollView: scrollView, at: pageIndex)
         }
     }
 
